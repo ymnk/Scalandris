@@ -44,19 +44,12 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
   extends View(context, attrs, defStyle) {  
   import Tetris2View._
 
-  private var mStatusText: TextView = _
-
   def this(context: Context, attrs: AttributeSet) = this(context, attrs, 0)
+
+  private var mStatusText: TextView = _
 
   private def initTetris2View: Unit = {
     setFocusable(true)
-/*
-    Resources r = this.getContext().getResources();
-    resetTiles(4);
-    loadTile(RED_STAR, r.getDrawable(R.drawable.redstar));
-    loadTile(YELLOW_STAR, r.getDrawable(R.drawable.yellowstar));
-    loadTile(GREEN_STAR, r.getDrawable(R.drawable.greenstar));
-*/
   }
 
   private val mRedrawHandler = new RefreshHandler()
@@ -95,9 +88,7 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
   override def onKeyDown(code: Int, event: KeyEvent): Boolean = {
     if (code == KeyEvent.KEYCODE_DPAD_UP) {
       if (mMode == READY | mMode == LOSE) {
-        Tetris.init
         setMode(RUNNING)
-        update()
       }
     }
 
@@ -131,9 +122,10 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
     mMode = newMode;
 
     if(mMode == RUNNING && oldMode!=RUNNING){
-      setFocusable(true)
+      Tetris.init
       mStatusText.setVisibility(View.INVISIBLE);
       update();
+      return
     }
 
     val res = getContext.getResources
@@ -144,12 +136,7 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
     if (newMode == READY) {
       str = res.getText(R.string.mode_ready)
     }
-/*
-    if (newMode == LOSE) {
-      str = res.getString(R.string.mode_lose_prefix) + mScore
-             + res.getString(R.string.mode_lose_suffix)
-    }
-*/
+
     mStatusText.setText(str);
     mStatusText.setVisibility(View.VISIBLE);
   }
