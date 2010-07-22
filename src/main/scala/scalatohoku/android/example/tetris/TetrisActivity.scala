@@ -104,6 +104,11 @@ class TetrisActivity extends Activity with TypedActivity {
 		 case KEYCODE_DPAD_RIGHT => tetrisService.setOperation( Tetris.GO_RIGHT )
 		 case KEYCODE_DPAD_LEFT => tetrisService.setOperation( Tetris.GO_LEFT )
 		 case KEYCODE_DPAD_UP  => tetrisService.setOperation( Tetris.ROTATE )
+		 case KEYCODE_DPAD_DOWN  =>
+                   import android.content.Intent
+                   import scalatohoku.android.example.MainActivity
+                   val intent = new Intent(this, classOf[MainActivity])
+                   this.startActivity(intent)
 		 case _ => ()
 	   }
        true

@@ -6,6 +6,7 @@ import java.util.Timer
 import java.util.TimerTask
 import scala.collection.mutable.ArrayBuffer
 
+import android.util.Log
 /**
  * テトリスの実装。
  * 
@@ -24,10 +25,28 @@ object Tetris extends ArrayBufferUtil {
     _renderer = Option(renderer)
   }
   
-  def renderViewBuffer()={
-    val rendered = _viewBuffer.grouped(12).map(_.mkString).mkString("\n")
+  def renderViewBuffer() = {
+    val rendered = this.synchronized{
+
+      val block = _blocks( _current ) // 現在落下中のブロック
+
+      PIXELS.foreach{ i =>
+        val p = _center + block(i)
+        _buffer(240 + p) = BLOCK
+      }
+
+      //バッファを表示 
+      (0 until 240).reverse.foreach { i => 
+        _viewBuffer(i) = _buffer(240+i)
+        _buffer(240+i) = _buffer(i)
+      }
+     _viewBuffer.grouped(12).map(_.mkString).mkString("\n")
+    }
     _renderer.foreach(_.write(rendered))
+
+    rendered
   }
+
   def copy( from:IndexedSeq[Int], to:ArrayBuffer[Int] ) = {
 	 (0 until to.size) foreach( i=>  to(i) = from(i))
   }
@@ -44,6 +63,84 @@ object Tetris extends ArrayBufferUtil {
       start
     }
   }
+
+  def action(op: Int): Unit = this.synchronized{
+    val block = _blocks( _current ) // 現在落下中のブロック
+ 
+    op match {
+      case GO_RIGHT => // 右移動判定 
+        if( (true /: PIXELS){ (b,i) => b && ( _buffer( _center + block(i) + 1 ) == FREE ) } ){
+          _center += 1
+      	}
+      case GO_LEFT =>  // 左移動判定
+      	if( (true /: PIXELS){ (b,i) => b && ( _buffer( _center + block(i) - 1 ) == FREE ) } ){
+          _center -= 1
+      	}
+      case ROTATE => //回転判定
+        //回転先の座標を計算
+        val afterRotate:IndexedSeq[Int] = _current match {
+          case 0 => block //四角ブロックは計算いらない
+          case _ => (0 until 4) map( i => {
+            val p = block(i)
+            val tx = java.lang.Math.round( p/12.0 ).asInstanceOf[Int]
+            val ty = p - tx*12
+            ty*12-tx
+          })
+        }
+
+        if( (true /: PIXELS){ (b,i) => b && ( _buffer( _center + afterRotate(i) ) == FREE ) } ){
+          //block updateBy afterRotate //Android上でimplicit defが効かない
+          //_blocks(_current) updateBy afterRotate
+          copy( afterRotate, block )
+          copy( afterRotate, _blocks(_current) )
+        }
+      case _ => ()
+    }
+
+  }
+
+  def ticktack(): Unit = this.synchronized{
+    val block = _blocks( _current ) // 現在落下中のブロック
+    //落下判定
+    (true /: PIXELS){ (b,i)=> {
+    	val p = _center + block(i)
+    	b && _buffer(12+p) == FREE
+    } } match {
+     case false => 
+       // ブロック停止　// 次のブロック決定（現在順送り）
+       PIXELS foreach( i => _buffer( _center + block(i) ) = BLOCK ) 
+
+       PIXELS.foreach{ i =>
+         val p = _center + block(i)
+         _buffer(240 + p) = BLOCK
+       }
+
+       deleteLines
+
+       _current = (_current + 1) % 7 
+       _center = initial_center
+     case _ => 
+       _center += 12
+    }
+  }
+
+  def deleteLines(): Unit = this.synchronized{
+
+    var k = 1
+    for(i <- (18 to 0 by -1) 
+        if (1 to 10).foldLeft(true){   // ラインがそろったか判定 
+             (b, j) => b && _buffer(240 + i*12+j)!=FREE }
+    ){
+      // 得点 1ライン 1点, ..., テトリス 10点 になる
+      _point+=k; k+=1
+       // 全体を一段下げる
+      for{j <- (i to 1 by -1)
+          k <- (1 to 10)}{
+        _buffer(240+j*12+k) = _buffer(240+(j-1)*12+k)
+        _buffer(j*12+k) = _buffer((j-1)*12+k)
+      } 
+    }
+  }
   
   /*　メインループ */
   def start() = {
@@ -53,88 +150,13 @@ object Tetris extends ArrayBufferUtil {
 
   def loop(){
     _buffer(11) = _point.toString // 得点を表示バッファに書き込み 
-    var block = _blocks( _current ) // 現在落下中のブロック 
 
-    _operation match {
-      case GO_RIGHT => // 右移動判定 
-      	if( (true /: PIXELS){ (b,i) => b && ( _buffer( _center + block(i) + 1 ) == FREE ) } ){
-   		  _center += 1
-      	}
-      case GO_LEFT =>  // 左移動判定
-      	if( (true /: PIXELS){ (b,i) => b && ( _buffer( _center + block(i) - 1 ) == FREE ) } ){
-   		  _center -= 1
-      	}
-      case ROTATE => //回転判定
-        //回転先の座標を計算
-        val afterRotate:IndexedSeq[Int] = _current match {
-        	case 0 => block //四角ブロックは計算いらない
-        	case _ => (0 until 4) map( i => {
-        				val p = block(i)
-        				val tx = java.lang.Math.round( p/12.0 ).asInstanceOf[Int]
-        				val ty = p - tx*12
-        				ty*12-tx })
-        }
-
-		if( (true /: PIXELS){ (b,i) => b && ( _buffer( _center + afterRotate(i) ) == FREE ) } ){
-			//block updateBy afterRotate //Android上でimplicit defが効かない
-			//_blocks(_current) updateBy afterRotate
-			copy( afterRotate, block )
-			copy( afterRotate, _blocks(_current) )
-		}
-      case _ => ()
-    }
+    action(_operation)
+ 
     _operation = NONE // キー入力キャンセル 
 
-    //落下判定
-    (true /: PIXELS){ (b,i)=> {
-    	val p = _center + block(i)
-    	_buffer(240 + p) = BLOCK
-    	b && _buffer(12+p) == FREE
-    } } match {
-    	case false => 
-    		// ブロック停止　// 次のブロック決定（現在順送り）
-     		PIXELS foreach( i => _buffer( _center + block(i) ) = BLOCK ) 
-    		_current = (_current + 1) % 7 
-    		_center = initial_center
-    	case _ => 
-    		_center += 12
-    }
-
-    {
-      var k = 1
-      for(i <- (18 to 0 by -1) 
-          if (1 to 10).foldLeft(true){   // ラインがそろったか判定 
-               (b, j) => b && _buffer(240 + i*12+j)!=FREE }
-      ){
-        // 得点 1ライン 1点, ..., テトリス 10点 になる
-        _point+=k; k+=1
-
-        // 全体を一段下げる
-        for{j <- (i to 1 by -1)
-            k <- (1 to 10)}{
-          _buffer(240+j*12+k) = _buffer(240+(j-1)*12+k)
-          _buffer(j*12+k) = _buffer((j-1)*12+k)
-	} 
-      }
-    }
-  
-    /* 移植できず・・
-　　  for(k=1,i=19;i--;){ // ラインがそろったか判定 
-　　　　for(j=11;--j&&Z[i*12+j]==S;); // そろったラインを検索
-　　　　if(!j){ // そろった 
-　　　　　　Point += k++; // 得点 1ライン 1点, ..., テトリス 10点 になる 
-　　　　　　for(j=++i*12;j>2*12;){
-		　　Z[j]=Z[j---12] // 全体を一段下げる
-　　　　　　}
-　　	　}
-	}
-    */
+    ticktack
     
-    //バッファを表示 
-    (0 until 240).reverse.foreach { i => 
-      _viewBuffer(i) = _buffer(240+i)
-      _buffer(240+i) = _buffer(i)
-    }
     renderViewBuffer
     
     //再帰
@@ -153,7 +175,7 @@ object Tetris extends ArrayBufferUtil {
     }
   }
 
-  private def gameover: Boolean = {
+  def gameover: Boolean = {
     !(1 to 10).foldLeft(true){(b, i) => b && _buffer(i+12)==FREE}
   } 
 
