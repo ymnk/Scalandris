@@ -8,8 +8,10 @@ import android.app._
 import service._
 import android.view.KeyEvent._
 import scalatohoku.android.example.R
+import scalatohoku.android.example.TR
+import scalatohoku.android.example.TypedActivity
 
-class TetrisActivity extends Activity {
+class TetrisActivity extends Activity with TypedActivity {
 
   var gamearea:TextView = null
   
@@ -25,13 +27,13 @@ class TetrisActivity extends Activity {
     
     //Main画面からデータ受取
     val now = getIntent.getExtras.get("NOW").asInstanceOf[java.util.Date]
-    findViewById(R.id.infoarea).asInstanceOf[TextView].setText(now.toString)
+    findView(TR.infoarea).setText(now.toString)
     
     //ゲーム表示エリア取得
-    gamearea = findViewById(R.id.gamearea).asInstanceOf[TextView]
+    gamearea = findView(TR.gamearea)
     
     //ボタンイベント
-    findViewById(R.id.go_button).asInstanceOf[Button]
+    findView(TR.go_button)
     .setOnClickListener( new View.OnClickListener{
     	def onClick(view:View) = goTetris
     })

@@ -7,7 +7,7 @@ import android.widget._
 import android.view._
 import android.content.Intent
 
-class MainActivity extends Activity {
+class MainActivity extends Activity with TypedActivity {
 
   override def onCreate(savedInstanceState: Bundle):Unit = {
     super.onCreate(savedInstanceState)
@@ -16,7 +16,7 @@ class MainActivity extends Activity {
     setContentView(R.layout.main)
     
     //ボタンイベント
-    findViewById(R.id.start_button).asInstanceOf[Button]
+    findView(TR.start_button)
     .setOnClickListener( new View.OnClickListener{
     	def onClick(view:View) = startTetrisActivity
     })
