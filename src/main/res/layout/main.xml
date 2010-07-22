@@ -15,6 +15,11 @@ android:text="@string/start_button"
 android:id="@+id/start_button"
 android:layout_width="wrap_content"
 android:layout_height="wrap_content" />
+<Button 
+android:text="@string/start_button2" 
+android:id="@+id/start_button2"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content" />
 
 </LinearLayout>
 

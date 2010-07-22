@@ -2,6 +2,14 @@
 <resources>
     <string name="app_name">Scalandris</string>
     <string name="start_button">スタート</string>
+    <string name="start_button2">スタート2</string>
     <string name="back_button">戻る</string>
 <string name="go_button">GO!</string>
+
+  <string name="mode_ready">Scalandris\nPress Up To Play</string>
+  <string name="mode_pause">Paused\nPress Up To Resume</string>
+  <string name="mode_lose_prefix">Game Over\nScore: </string>
+  <string name="mode_lose_suffix">\nPress Up To Play</string>
+  <string name="tetris2_layout_text_text"></string>
+
 </resources>
