@@ -16,21 +16,22 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Color
 
-import android.util.Log
-
 import android.view.Menu
 
-class Tetris2Activity extends Activity with TypedActivity {
+import android.util.Log
 
-  private var mTetris2View: Tetris2View = _
+
+class Tetris3Activity extends Activity with TypedActivity {
+
+  private var mTetris3View: Tetris3View = _
 
   override def onCreate(savedInstanceState: Bundle):Unit = {
     super.onCreate(savedInstanceState)
 
-    setContentView(R.layout.tetris2)
-    mTetris2View = findView(TR.tetris2)
-    mTetris2View.setTextView(findView(TR.tetris2_text));
-    mTetris2View.setMode(Tetris2View.READY);
+    setContentView(R.layout.tetris3)
+    mTetris3View = findView(TR.tetris3)
+    mTetris3View.setTextView(findView(TR.tetris3_text));
+    mTetris3View.setMode(Tetris3View.READY);
   }
 
   val MENU_ID1 = Menu.FIRST
@@ -55,43 +56,61 @@ class Tetris2Activity extends Activity with TypedActivity {
         return super.onOptionsItemSelected(item)
     }
   }
-
 }
 
-object Tetris2View {
+object Tetris3View {
   val PAUSE = 0
   val READY = 1
   val RUNNING = 2
   val LOSE = 3
 }
 
-class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
-  extends View(context, attrs, defStyle) {  
-  import Tetris2View._
+class Tetris3View(context: Context, attrs: AttributeSet, defStyle: Int)
+  extends SurfaceView(context, attrs, defStyle) with SurfaceHolder.Callback with Runnable{  
+  import Tetris3View._
 
   def this(context: Context, attrs: AttributeSet) = this(context, attrs, 0)
 
   private var mStatusText: TextView = _
 
-  private def initTetris2View: Unit = {
+  private var mainLoop: Thread = _
+
+  private var mPaint: Paint = _
+
+  private def initTetris3View: Unit = {
     setFocusable(true)
+
+    getHolder().addCallback(this)
+
+    mPaint = new Paint()
+
+    Tetris.init
   }
 
-  private val mRedrawHandler = new RefreshHandler()
-
-  class RefreshHandler extends Handler {
-    override def handleMessage(msg: Message): Unit= {
-      Tetris2View.this.update()
-      Tetris2View.this.invalidate()
-    }
-
-    def sleep(delayMillis: Long): Unit = {
-      this.removeMessages(0);
-      sendMessageDelayed(obtainMessage(0), delayMillis);
-    }
+  override def surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int){
   }
 
-  val mMoveDelay:Long = 500
+  override def surfaceCreated(holder: SurfaceHolder): Unit = {
+    val canvas = holder.lockCanvas
+    onDraw(canvas)
+    holder.unlockCanvasAndPost(canvas);
+  }
+
+  override def surfaceDestroyed(holder: SurfaceHolder): Unit = {
+  }
+
+
+  override def run(): Unit = {
+    while (mainLoop!=null){
+       update()
+       Option(getHolder.lockCanvas).foreach {canvas =>
+         onDraw(canvas)
+         getHolder.unlockCanvasAndPost(canvas);
+       }
+    }        
+  }
+    
+  val mMoveDelay:Long = 300
   var mLastMove: Long = 0 
 
   def update(): Unit = { 
@@ -101,7 +120,6 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
         Tetris.ticktack
         mLastMove = now
       }
-      mRedrawHandler.sleep(mMoveDelay);
     }
 
     if(Tetris.gameover){
@@ -116,7 +134,6 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
         setMode(RUNNING)
       }
     }
-
 /*
     if (code == KEYCODE_DPAD_DOWN ){
       if (mMode == READY | mMode == LOSE) {
@@ -128,7 +145,6 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
       }
     } 
 */
-
    if(mMode == RUNNING){
      code match{
        case KEYCODE_DPAD_RIGHT => Tetris.action( Tetris.GO_RIGHT )
@@ -136,7 +152,6 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
        case KEYCODE_DPAD_UP  => Tetris.action( Tetris.ROTATE )
        case _ =>
      }
-     invalidate()
    }  
 
    true
@@ -148,10 +163,16 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
     val oldMode = mMode
     mMode = newMode;
 
+    if(newMode == oldMode)
+      return
+
     if(mMode == RUNNING && oldMode!=RUNNING){
       Tetris.init
       mStatusText.setVisibility(View.INVISIBLE);
-      update();
+
+      mainLoop = new Thread(this)
+      mainLoop.start();
+
       return
     }
 
@@ -160,16 +181,22 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
     if (newMode == PAUSE) {
       str = res.getText(R.string.mode_pause)
     }
-    if (newMode == READY) {
+    if (newMode == READY && oldMode == RUNNING) {
+      mainLoop = null
       str = res.getText(R.string.mode_ready)
     }
-
-    mStatusText.setText(str);
-    mStatusText.setVisibility(View.VISIBLE);
+/*
+    val handler = new Handler() {  
+      override def handleMessage(msg: Message): Unit = {  
+        mStatusText.setText(str);
+        mStatusText.setVisibility(View.VISIBLE)
+      }
+    }
+    handler.sendEmptyMessage(0);  
+*/
   }
 
   override def onDraw(canvas: Canvas): Unit = {
-    super.onDraw(canvas)
 
     canvas.drawColor(Color.BLACK);
 
@@ -219,6 +246,6 @@ class Tetris2View(context: Context, attrs: AttributeSet, defStyle: Int)
     mStatusText = newView
   }
 
-  initTetris2View
+  initTetris3View
 
 } // end of class

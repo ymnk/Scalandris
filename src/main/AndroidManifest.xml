@@ -16,6 +16,8 @@
 
         <activity android:name=".tetris.Tetris2Activity" android:label="@string/app_name">
         </activity>
+        <activity android:name=".tetris.Tetris3Activity" android:label="@string/app_name">
+        </activity>
         
         <service android:name=".tetris.TetrisService" android:process=":remote">
             <intent-filter>

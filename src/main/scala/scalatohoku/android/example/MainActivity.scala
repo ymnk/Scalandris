@@ -26,6 +26,11 @@ class MainActivity extends Activity with TypedActivity {
     	def onClick(view:View) = startTetris2Activity
     })
 
+    findView(TR.start_button3)
+    .setOnClickListener( new View.OnClickListener{
+    	def onClick(view:View) = startTetris3Activity
+    })
+
   }
 
   private def startTetrisActivity = {
@@ -36,6 +41,12 @@ class MainActivity extends Activity with TypedActivity {
 
   private def startTetris2Activity = {
 	val intent = new Intent(this,classOf[Tetris2Activity])
+	intent.putExtra( "NOW" , new java.util.Date )//データ引継ぎ
+	startActivity(intent)
+  }
+
+  private def startTetris3Activity = {
+	val intent = new Intent(this,classOf[Tetris3Activity])
 	intent.putExtra( "NOW" , new java.util.Date )//データ引継ぎ
 	startActivity(intent)
   }

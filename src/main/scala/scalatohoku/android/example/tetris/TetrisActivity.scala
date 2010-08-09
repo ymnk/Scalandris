@@ -11,6 +11,8 @@ import scalatohoku.android.example.R
 import scalatohoku.android.example.TR
 import scalatohoku.android.example.TypedActivity
 
+import android.view.Menu
+
 class TetrisActivity extends Activity with TypedActivity {
 
   var gamearea:TextView = null
@@ -104,16 +106,36 @@ class TetrisActivity extends Activity with TypedActivity {
 		 case KEYCODE_DPAD_RIGHT => tetrisService.setOperation( Tetris.GO_RIGHT )
 		 case KEYCODE_DPAD_LEFT => tetrisService.setOperation( Tetris.GO_LEFT )
 		 case KEYCODE_DPAD_UP  => tetrisService.setOperation( Tetris.ROTATE )
-		 case KEYCODE_DPAD_DOWN  =>
-                   import android.content.Intent
-                   import scalatohoku.android.example.MainActivity
-                   val intent = new Intent(this, classOf[MainActivity])
-                   this.startActivity(intent)
 		 case _ => ()
 	   }
        true
      }else 
        super.onKeyDown(keyCode,event)
+  }
+
+
+
+  val MENU_ID1 = Menu.FIRST
+
+  override def onCreateOptionsMenu(menu: Menu): Boolean = {
+    val m = menu.add(Menu.NONE, MENU_ID1, Menu.NONE, "Revert")
+    m.setIcon(android.R.drawable.ic_menu_revert)
+    super.onCreateOptionsMenu(menu)
+  }
+
+  override def onOptionsItemSelected(item: MenuItem): Boolean = {
+    val dialog = new AlertDialog.Builder(this)
+
+    item.getItemId match {
+      case MENU_ID1 =>
+        import android.content.Intent
+        import scalatohoku.android.example.MainActivity
+        val intent = new Intent(this, classOf[MainActivity])
+        this.startActivity(intent)
+        return true
+      case _ =>
+        return super.onOptionsItemSelected(item)
+    }
   }
   
 } // end of class
