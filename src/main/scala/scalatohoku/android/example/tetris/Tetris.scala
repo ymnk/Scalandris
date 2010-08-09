@@ -124,7 +124,7 @@ object Tetris extends ArrayBufferUtil {
     }
   }
 
-  def deleteLines(): Unit = this.synchronized{
+  final def deleteLines(): Unit = this.synchronized{
 
     var k = 1
     for(i <- (18 to 0 by -1) 
@@ -140,7 +140,10 @@ object Tetris extends ArrayBufferUtil {
         _buffer(j*12+k) = _buffer((j-1)*12+k)
       } 
     }
-  }
+
+    if(k>1)
+      deleteLines()
+   }
   
   /*　メインループ */
   def start() = {
